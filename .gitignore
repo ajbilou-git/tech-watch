@@ -1,0 +1,26 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+
+# Rapports générés
+reports/
+
+# Configuration personnelle (avec secrets)
+config.local.yaml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini

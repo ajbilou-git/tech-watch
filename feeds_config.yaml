@@ -1,0 +1,116 @@
+# RSS Feeds Configuration
+# Add your RSS feeds and keywords here to monitor new technologies
+
+# Technology keywords used for smart filtering
+technology_keywords:
+  cloud: ["azure", "aws", "gcp", "cloud", "iaas", "paas", "saas"]
+  security: ["security", "vulnerability", "compliance", "defender", "sentinel", "threat", "cve"]
+  database: ["sql", "database", "cosmos", "postgresql", "mysql", "mongodb", "redis"]
+  containers: ["docker", "kubernetes", "container", "k8s", "aks", "container apps"]
+  devops: ["devops", "ci/cd", "pipeline", "github actions", "terraform", "ansible"]
+  ai_ml: ["ai", "artificial intelligence", "machine learning", "ml", "openai", "copilot"]
+
+# RSS Feeds by Category
+feeds:
+  # Azure Security
+  azure_security:
+    - name: "Microsoft Security Response Center"
+      url: "https://msrc.microsoft.com/blog/feed"
+      keywords: ["azure"]
+      
+    - name: "Azure Security Blog"
+      url: "https://azure.microsoft.com/en-us/blog/topics/security/feed/"
+      keywords: []
+      
+    - name: "Azure Updates - Security"
+      url: "https://azurecomcdn.azureedge.net/en-us/updates/feed/"
+      keywords: ["security", "compliance", "defender", "sentinel"]
+
+  # Azure Architecture
+  azure_architecture:
+    - name: "Azure Architecture Blog"
+      url: "https://techcommunity.microsoft.com/gxcuf89792/rss/board?board.id=AzureArchitectureBlog"
+      keywords: []
+      
+    - name: "Azure Updates - Architecture"
+      url: "https://azurecomcdn.azureedge.net/en-us/updates/feed/"
+      keywords: ["architecture", "design", "pattern", "best practices"]
+
+  # Azure General Blog
+  azure_blog:
+    - name: "Azure Blog - General"
+      url: "https://azure.microsoft.com/en-us/blog/feed/"
+      keywords: []
+      
+    - name: "Azure DevOps Blog"
+      url: "https://devblogs.microsoft.com/devops/feed/"
+      keywords: []
+
+  # Azure Database
+  azure_database:
+    - name: "Azure Database Blog"
+      url: "https://techcommunity.microsoft.com/gxcuf89792/rss/board?board.id=AzureDatabaseBlog"
+      keywords: []
+      
+    - name: "Azure SQL Blog"
+      url: "https://techcommunity.microsoft.com/gxcuf89792/rss/board?board.id=AzureSQLBlog"
+      keywords: []
+      
+    - name: "Azure Updates - Database"
+      url: "https://azurecomcdn.azureedge.net/en-us/updates/feed/"
+      keywords: ["sql", "database", "cosmos", "postgresql", "mysql"]
+
+  # Azure App Services
+  azure_app_services:
+    - name: "Azure App Service Blog"
+      url: "https://azure.github.io/AppService/feed.xml"
+      keywords: []
+      
+    - name: "Azure Updates - App Services"
+      url: "https://azurecomcdn.azureedge.net/en-us/updates/feed/"
+      keywords: ["app service", "web app", "function", "container apps"]
+
+  # Terraform
+  terraform:
+    - name: "HashiCorp Terraform Blog"
+      url: "https://www.hashicorp.com/blog/products/terraform/rss.xml"
+      keywords: []
+      
+    - name: "Terraform AzureRM Provider Releases"
+      url: "https://github.com/hashicorp/terraform-provider-azurerm/releases.atom"
+      keywords: []
+      
+    - name: "Terraform Core Releases"
+      url: "https://github.com/hashicorp/terraform/releases.atom"
+      keywords: []
+
+  # HashiCorp
+  hashicorp:
+    - name: "HashiCorp Blog"
+      url: "https://www.hashicorp.com/blog/rss.xml"
+      keywords: ["azure", "cloud", "infrastructure"]
+      
+    - name: "HashiCorp Announcements"
+      url: "https://www.hashicorp.com/blog/categories/announcements/rss.xml"
+      keywords: []
+
+  # GitHub Actions
+  github_actions:
+    - name: "GitHub Actions Changelog"
+      url: "https://github.blog/changelog/label/actions/feed/"
+      keywords: []
+      
+    - name: "GitHub Blog - Actions"
+      url: "https://github.blog/feed/"
+      keywords: ["actions", "workflow", "ci/cd", "runner"]
+      
+    - name: "GitHub Actions Releases"
+      url: "https://github.com/actions/runner/releases.atom"
+      keywords: []
+
+# Template for adding new feeds:
+# 
+# new_category:
+#   - name: "Feed Name"
+#     url: "https://example.com/feed.xml"
+#     keywords: ["keyword1", "keyword2"]

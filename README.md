@@ -17,6 +17,7 @@ This solution automatically analyzes RSS feeds from key technologies in your inf
 
 ## ✨ Features
 
+### Core Features
 - ✅ Configurable RSS feed aggregation
 - ✅ Keyword filtering
 - ✅ Modern and responsive HTML reports
@@ -26,6 +27,15 @@ This solution automatically analyzes RSS feeds from key technologies in your inf
 - ✅ Automatic report cleanup
 - ✅ Simple YAML configuration
 - ✅ Smart summaries with AI-powered text extraction
+
+### 🚀 Advanced Features (New!)
+- 🎯 **Priority Tagging** - Automatic classification (Critical/High/Medium/Low) based on keywords
+- 🔥 **TOP 3 Executive Summary** - Highlights the most important articles at the top
+- 📈 **Trending Topics** - Weekly analysis of hot keywords and technologies
+- 🔗 **Duplicate Detection** - Groups similar articles to avoid redundancy
+- 🤖 **AI Summaries** - Optional OpenAI integration for intelligent summaries (GPT-4o-mini)
+- 💬 **Teams/Slack Integration** - Automatic notifications to collaboration platforms
+- 🎨 **Enhanced UI** - Color-coded priority badges, better visual hierarchy
 
 ## 📦 Prerequisites
 
@@ -150,6 +160,264 @@ Enable-ScheduledTask -TaskName "MastermaintTechWatch"
 ```powershell
 Unregister-ScheduledTask -TaskName "MastermaintTechWatch" -Confirm:$false
 ```
+
+## 🚀 Advanced Features Configuration
+
+The tech watch solution includes powerful advanced features that enhance user experience and provide better insights.
+
+### 🎯 Priority Tagging
+
+Automatically classifies articles by priority level based on keywords.
+
+**Configuration** (`config.yaml`):
+```yaml
+features:
+  priority_tagging:
+    enabled: true  # Set to false to disable
+    rules:
+      critical: ["cve", "vulnerability", "security patch", "breaking change"]
+      high: ["deprecation", "end of life", "major update"]
+      medium: ["new feature", "improvement", "release"]
+      low: ["documentation", "blog", "announcement"]
+```
+
+**Benefits:**
+- 🔴 **CRITICAL**: Security issues, breaking changes
+- 🟠 **HIGH**: Important updates, deprecations
+- 🟢 **MEDIUM**: New features, improvements
+- ⚪ **LOW**: General news, documentation
+
+**Visual Example:**
+Each article displays a color-coded badge indicating its priority level.
+
+---
+
+### 🔥 Executive Summary (TOP 3)
+
+Displays the 3 most important articles at the top of the report for quick scanning.
+
+**Configuration** (`config.yaml`):
+```yaml
+features:
+  executive_summary:
+    enabled: true
+    top_count: 3  # Number of top articles to display (1-10)
+```
+
+**Benefits:**
+- ⚡ See critical updates in 10 seconds
+- 📊 Priority-based ranking
+- 🎯 Focus on what matters most
+
+---
+
+### 📈 Trending Topics Analysis
+
+Analyzes keywords across all articles to identify hot topics and technologies.
+
+**Configuration** (`config.yaml`):
+```yaml
+features:
+  trends_analysis:
+    enabled: true
+    min_mentions: 2  # Minimum mentions to be considered a trend
+```
+
+**Benefits:**
+- 🔥 Identify emerging technologies
+- 📊 Track technology adoption
+- 🎯 Spot important patterns
+
+**Example Output:**
+```
+Trending Topics This Week
+azure (15)  security (12)  terraform (8)  copilot (7)  kubernetes (5)
+```
+
+---
+
+### 🔗 Duplicate Detection
+
+Groups similar articles to avoid reading the same news from multiple sources.
+
+**Configuration** (`config.yaml`):
+```yaml
+features:
+  duplicate_detection:
+    enabled: true
+    similarity_threshold: 0.7  # 0.0 to 1.0 (higher = more strict)
+```
+
+**How it works:**
+- Uses TF-IDF and cosine similarity
+- Groups articles with >70% similarity
+- Displays grouped articles together
+
+**Benefits:**
+- ⏱️ Save time by avoiding redundant reading
+- 🔗 See all coverage of the same topic
+- 📊 Understand topic importance by number of sources
+
+---
+
+### 🤖 AI-Powered Summaries (OpenAI)
+
+Optional integration with OpenAI GPT-4o-mini for intelligent, context-aware summaries.
+
+**Setup:**
+
+1. **Get OpenAI API Key**:
+   - Go to: https://platform.openai.com/api-keys
+   - Create a new API key
+   - Copy the key (starts with `sk-...`)
+
+2. **Configure** (`config.yaml`):
+```yaml
+features:
+  openai:
+    enabled: true
+    api_key: "sk-proj-your-api-key-here"
+    model: "gpt-4o-mini"  # Cheaper and faster
+    max_tokens: 100       # Summary length
+```
+
+**Cost:**
+- ~$0.01 per day for 20-30 articles
+- GPT-4o-mini is very affordable ($0.15/1M input tokens)
+
+**Benefits:**
+- 🤖 High-quality, context-aware summaries
+- 📝 Tailored for DevOps/infrastructure context
+- 🎯 Extract key technical points
+
+**Visual:**
+AI summaries appear in a green box below regular summaries with a 🤖 icon.
+
+---
+
+### 💬 Microsoft Teams Integration
+
+Send automatic notifications to a Teams channel.
+
+**Setup:**
+
+1. **Create Incoming Webhook** in Teams:
+   - Open your Teams channel
+   - Click `···` → **Connectors**
+   - Search for **"Incoming Webhook"**
+   - Click **Configure**
+   - Name it "Tech Watch" and click **Create**
+   - **Copy the webhook URL**
+
+2. **Configure** (`config.yaml`):
+```yaml
+features:
+  teams:
+    enabled: true
+    webhook_url: "https://outlook.office.com/webhook/..."
+    mention_on_critical: false  # Set to true to @mention channel
+```
+
+**Benefits:**
+- 📢 Share updates with your team automatically
+- 🚨 Get instant alerts for critical articles
+- 📊 Centralized notification hub
+
+**Notifications include:**
+- Daily summary with article count
+- Top trending topics
+- Critical alerts (if any)
+- Link to full report
+
+---
+
+### 💬 Slack Integration
+
+Send automatic notifications to a Slack channel.
+
+**Setup:**
+
+1. **Create Incoming Webhook** in Slack:
+   - Go to: https://api.slack.com/messaging/webhooks
+   - Click **Create your Slack app**
+   - Choose "From scratch"
+   - Name: "Tech Watch", choose workspace
+   - Go to **Incoming Webhooks** → Enable
+   - Click **Add New Webhook to Workspace**
+   - Choose channel and authorize
+   - **Copy the webhook URL**
+
+2. **Configure** (`config.yaml`):
+```yaml
+features:
+  slack:
+    enabled: true
+    webhook_url: "https://hooks.slack.com/services/..."
+```
+
+**Benefits:**
+- Same as Teams integration
+- Works with Slack's notification system
+- Can be routed to multiple channels
+
+---
+
+### 🎛️ Feature Management
+
+**Enable/Disable Features:**
+
+All features can be individually enabled or disabled:
+
+```yaml
+features:
+  priority_tagging:
+    enabled: true   # ✅ Active
+  
+  executive_summary:
+    enabled: true   # ✅ Active
+  
+  duplicate_detection:
+    enabled: false  # ❌ Disabled
+  
+  trends_analysis:
+    enabled: true   # ✅ Active
+  
+  openai:
+    enabled: false  # ❌ Disabled (requires API key)
+  
+  teams:
+    enabled: false  # ❌ Disabled (requires webhook)
+  
+  slack:
+    enabled: false  # ❌ Disabled (requires webhook)
+```
+
+**Recommended Setup:**
+
+**Minimal** (free, no external dependencies):
+```yaml
+priority_tagging: enabled
+executive_summary: enabled
+trends_analysis: enabled
+duplicate_detection: enabled
+```
+
+**Standard** (with email):
+```yaml
++ Gmail email delivery
+```
+
+**Professional** (with collaboration tools):
+```yaml
++ Teams or Slack integration
+```
+
+**Premium** (with AI):
+```yaml
++ OpenAI summaries (~$0.30/month)
+```
+
+---
 
 ## 📁 Project Structure
 
@@ -289,34 +557,78 @@ config.yaml        # Contains sensitive data (Gmail password)
 
 ## 🎨 Report Example
 
-The generated HTML report contains:
+The generated HTML report now includes advanced features:
 
 ```
 🔍 Tech Watch Report
 Daily digest of the latest technology updates and releases
+Automated monitoring of Azure, Terraform, GitHub Actions, and related technologies
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔥 TOP 3 - Must Read Today
+
+  🔴 CRITICAL  AZURE_SECURITY
+  Azure SQL Database - Critical Security Patch CVE-2025-1234
+  A critical vulnerability has been discovered in Azure SQL Database...
+  
+  🟠 HIGH  TERRAFORM
+  Terraform 1.8 Release - Breaking Changes
+  HashiCorp announces Terraform 1.8 with several breaking changes...
+  
+  🟢 MEDIUM  GITHUB_ACTIONS
+  GitHub Actions - New Workflow Syntax
+  GitHub introduces a new workflow syntax for better readability...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 Trending Topics This Week
+
+azure(15)  security(12)  terraform(8)  github(7)  copilot(5)  
+kubernetes(4)  sql(4)  update(3)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📊 Daily Summary
-├─ 45 Articles Collected
-├─ 8 Categories
-└─ 17 RSS Feeds Monitored
+
+45 Articles Collected  |  8 Categories  |  17 RSS Feeds Monitored
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🔒 AZURE_SECURITY
-├─ [MSRC] Security Update for Azure SQL
-└─ [Azure Security Blog] New compliance features
+
+  🔴 CRITICAL  [MSRC]  📅 10/23/2025 09:15
+  Security Update for Azure SQL Database
+  A critical security patch has been released...
+  🤖 AI Summary: This update addresses a remote code execution 
+  vulnerability affecting Azure SQL Database instances...
+  
+  🟢 MEDIUM  [Azure Security Blog]  📅 10/23/2025 08:30
+  New Compliance Features in Azure Security Center
+  Microsoft announces enhanced compliance monitoring...
 
 🗄️ AZURE_DATABASE
-├─ [Azure SQL Blog] Performance improvements in SQL Database
-└─ [Azure Updates] Cosmos DB new features
+
+  🟢 MEDIUM  [Azure SQL Blog]  📅 10/22/2025 14:20
+  Performance Improvements in SQL Database
+  New query optimization features have been introduced...
 
 🏗️ TERRAFORM
-├─ [HashiCorp Blog] Terraform 1.6 available
-└─ [AzureRM Provider] Release 3.86.0
 
-🐙 GITHUB_ACTIONS
-├─ [Actions Changelog] New workflow syntax
-└─ [Runner Releases] v2.310.0
+  🟠 HIGH  [HashiCorp Blog]  📅 10/23/2025 11:00
+  Terraform 1.8 Released
+  This major release includes breaking changes...
+
 ...
 ```
+
+**Visual Features:**
+- 🎨 Color-coded priority badges (Red/Orange/Green/Gray)
+- 🔥 TOP 3 section with most important articles
+- 📈 Trending keywords with occurrence counts
+- 🤖 Optional AI summaries in green boxes
+- 🏷️ Category-based organization with icons
+- 📱 Responsive design for mobile viewing
 
 ## 🔧 Advanced Customization
 

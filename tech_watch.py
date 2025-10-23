@@ -10,6 +10,7 @@ import os
 import sys
 import re
 import smtplib
+import json
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -17,7 +18,11 @@ from dateutil import parser as date_parser
 from pathlib import Path
 from jinja2 import Template
 from bs4 import BeautifulSoup
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from collections import Counter
 import traceback
+import requests
 
 
 class TechWatch:
@@ -26,6 +31,9 @@ class TechWatch:
         self.config = self._load_config(config_path)
         self.articles = []
         self.errors = []
+        self.trends = []
+        self.duplicate_groups = []
+        self.top_articles = []
         
     def _load_config(self, config_path):
         """Load configuration from YAML file"""
@@ -160,6 +168,204 @@ class TechWatch:
         
         return summary.strip()
     
+    def _calculate_priority(self, article):
+        """Calculate priority score for an article"""
+        features = self.config.get('features', {})
+        priority_config = features.get('priority_tagging', {})
+        
+        if not priority_config.get('enabled', False):
+            return 'medium', 50
+        
+        rules = priority_config.get('rules', {})
+        text = f"{article.get('title', '')} {article.get('summary', '')}".lower()
+        
+        # Check critical keywords
+        for keyword in rules.get('critical', []):
+            if keyword.lower() in text:
+                return 'critical', 100
+        
+        # Check high priority keywords
+        for keyword in rules.get('high', []):
+            if keyword.lower() in text:
+                return 'high', 75
+        
+        # Check medium priority keywords
+        for keyword in rules.get('medium', []):
+            if keyword.lower() in text:
+                return 'medium', 50
+        
+        # Default to low
+        return 'low', 25
+    
+    def _detect_duplicates(self):
+        """Detect and group similar articles"""
+        features = self.config.get('features', {})
+        dup_config = features.get('duplicate_detection', {})
+        
+        if not dup_config.get('enabled', False) or len(self.articles) < 2:
+            return []
+        
+        threshold = dup_config.get('similarity_threshold', 0.7)
+        
+        # Create text corpus
+        texts = [f"{a['title']} {a['summary']}" for a in self.articles]
+        
+        # Calculate TF-IDF vectors
+        vectorizer = TfidfVectorizer(stop_words='english')
+        tfidf_matrix = vectorizer.fit_transform(texts)
+        
+        # Calculate cosine similarity
+        similarity_matrix = cosine_similarity(tfidf_matrix)
+        
+        # Group similar articles
+        grouped = set()
+        groups = []
+        
+        for i in range(len(self.articles)):
+            if i in grouped:
+                continue
+            
+            group = [i]
+            for j in range(i + 1, len(self.articles)):
+                if j not in grouped and similarity_matrix[i][j] >= threshold:
+                    group.append(j)
+                    grouped.add(j)
+            
+            if len(group) > 1:
+                groups.append({
+                    'articles': [self.articles[idx] for idx in group],
+                    'count': len(group)
+                })
+                grouped.add(i)
+        
+        return groups
+    
+    def _analyze_trends(self):
+        """Analyze trends from collected articles"""
+        features = self.config.get('features', {})
+        trends_config = features.get('trends_analysis', {})
+        
+        if not trends_config.get('enabled', False):
+            return []
+        
+        min_mentions = trends_config.get('min_mentions', 2)
+        
+        # Extract keywords from all articles
+        all_text = ' '.join([f"{a['title']} {a['summary']}" for a in self.articles])
+        
+        # Common tech keywords to look for
+        tech_keywords = [
+            'azure', 'terraform', 'github', 'kubernetes', 'docker', 'python',
+            'copilot', 'ai', 'security', 'vulnerability', 'release', 'update',
+            'deprecation', 'feature', 'api', 'cloud', 'database', 'sql',
+            'devops', 'ci/cd', 'container', 'serverless', 'function'
+        ]
+        
+        # Count keyword occurrences
+        keyword_counts = Counter()
+        all_text_lower = all_text.lower()
+        
+        for keyword in tech_keywords:
+            count = all_text_lower.count(keyword)
+            if count >= min_mentions:
+                keyword_counts[keyword] = count
+        
+        # Get top trends
+        top_trends = keyword_counts.most_common(10)
+        
+        return [{'keyword': k, 'count': c} for k, c in top_trends]
+    
+    def _get_openai_summary(self, article):
+        """Get AI-powered summary using OpenAI"""
+        features = self.config.get('features', {})
+        openai_config = features.get('openai', {})
+        
+        if not openai_config.get('enabled', False):
+            return None
+        
+        api_key = openai_config.get('api_key', '')
+        if not api_key:
+            return None
+        
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=api_key)
+            
+            text = f"Title: {article['title']}\n\n{article['summary']}"
+            
+            response = client.chat.completions.create(
+                model=openai_config.get('model', 'gpt-4o-mini'),
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Summarize this tech article in 2-3 clear sentences for a DevOps engineer."
+                    },
+                    {
+                        "role": "user",
+                        "content": text
+                    }
+                ],
+                max_tokens=openai_config.get('max_tokens', 100),
+                temperature=0.3
+            )
+            
+            return response.choices[0].message.content
+        except Exception as e:
+            print(f"  OpenAI error: {e}")
+            return None
+    
+    def _send_to_teams(self, content, is_critical=False):
+        """Send notification to Microsoft Teams"""
+        features = self.config.get('features', {})
+        teams_config = features.get('teams', {})
+        
+        if not teams_config.get('enabled', False):
+            return False
+        
+        webhook_url = teams_config.get('webhook_url', '')
+        if not webhook_url:
+            return False
+        
+        try:
+            message = {
+                "@type": "MessageCard",
+                "@context": "https://schema.org/extensions",
+                "summary": "Tech Watch Report",
+                "themeColor": "FF0000" if is_critical else "0078D7",
+                "title": "🔍 Tech Watch Update",
+                "text": content
+            }
+            
+            response = requests.post(webhook_url, json=message)
+            return response.status_code == 200
+        except Exception as e:
+            print(f"  Teams error: {e}")
+            return False
+    
+    def _send_to_slack(self, content, is_critical=False):
+        """Send notification to Slack"""
+        features = self.config.get('features', {})
+        slack_config = features.get('slack', {})
+        
+        if not slack_config.get('enabled', False):
+            return False
+        
+        webhook_url = slack_config.get('webhook_url', '')
+        if not webhook_url:
+            return False
+        
+        try:
+            message = {
+                "text": f"🔍 *Tech Watch Update*\n\n{content}",
+                "color": "#ff0000" if is_critical else "#0078d7"
+            }
+            
+            response = requests.post(webhook_url, json=message)
+            return response.status_code == 200
+        except Exception as e:
+            print(f"  Slack error: {e}")
+            return False
+    
     def fetch_feeds(self):
         """Fetch all configured RSS feeds"""
         days_back = self.config['output']['days_back']
@@ -206,6 +412,17 @@ class TechWatch:
                                 'published': published,
                                 'published_str': self._format_date(published)
                             }
+                            
+                            # Calculate priority
+                            priority_level, priority_score = self._calculate_priority(article)
+                            article['priority'] = priority_level
+                            article['priority_score'] = priority_score
+                            
+                            # Try OpenAI summary if enabled
+                            openai_summary = self._get_openai_summary(article)
+                            if openai_summary:
+                                article['ai_summary'] = openai_summary
+                            
                             self.articles.append(article)
                             count += 1
                     
@@ -234,12 +451,27 @@ class TechWatch:
     
     def generate_report(self):
         """Generate an HTML report"""
-        # Sort articles by date (most recent first)
+        # Analyze trends
+        print("\nAnalyzing trends...")
+        self.trends = self._analyze_trends()
+        
+        # Detect duplicates
+        print("Detecting duplicate articles...")
+        self.duplicate_groups = self._detect_duplicates()
+        
+        # Sort articles by priority and date
         sorted_articles = sorted(
             self.articles,
-            key=lambda x: x['published'] if x['published'] else (0,),
+            key=lambda x: (x.get('priority_score', 50), x['published'] if x['published'] else (0,)),
             reverse=True
         )
+        
+        # Get TOP articles for executive summary
+        features = self.config.get('features', {})
+        exec_config = features.get('executive_summary', {})
+        if exec_config.get('enabled', True):
+            top_count = exec_config.get('top_count', 3)
+            self.top_articles = sorted_articles[:top_count]
         
         # Group by category
         by_category = {}
@@ -379,6 +611,114 @@ class TechWatch:
             color: #856404;
             margin: 5px 0;
         }
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-right: 10px;
+            text-transform: uppercase;
+        }
+        .priority-critical {
+            background: #dc3545;
+            color: white;
+        }
+        .priority-high {
+            background: #fd7e14;
+            color: white;
+        }
+        .priority-medium {
+            background: #28a745;
+            color: white;
+        }
+        .priority-low {
+            background: #6c757d;
+            color: white;
+        }
+        .top-articles {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .top-articles h2 {
+            margin-top: 0;
+            font-size: 2em;
+        }
+        .top-article-item {
+            background: rgba(255,255,255,0.15);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ffd700;
+        }
+        .top-article-item:last-child {
+            margin-bottom: 0;
+        }
+        .top-article-item a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        .top-article-item a:hover {
+            text-decoration: underline;
+        }
+        .trends-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .trends-section h2 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .trend-item {
+            display: inline-block;
+            background: #e7f3ff;
+            color: #0066cc;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        .trend-count {
+            background: #0066cc;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 5px;
+            font-size: 0.9em;
+        }
+        .duplicates-section {
+            background: #fff9e6;
+            border: 1px solid #ffcc00;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .duplicates-section h4 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .ai-summary {
+            background: #e8f5e9;
+            border-left: 3px solid #4caf50;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-style: italic;
+        }
+        .ai-summary::before {
+            content: "🤖 AI Summary: ";
+            font-weight: bold;
+            color: #4caf50;
+        }
     </style>
 </head>
 <body>
@@ -394,6 +734,33 @@ class TechWatch:
         {% for error in errors %}
         <div class="error-item">• {{ error }}</div>
         {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if top_articles %}
+    <div class="top-articles">
+        <h2>🔥 TOP {{ top_articles|length }} - Must Read Today</h2>
+        {% for article in top_articles %}
+        <div class="top-article-item">
+            <div style="margin-bottom: 5px;">
+                <span class="priority-badge priority-{{ article.priority }}">{{ article.priority }}</span>
+                <span style="opacity: 0.8; font-size: 0.9em;">{{ article.category|upper }}</span>
+            </div>
+            <a href="{{ article.link }}" target="_blank">{{ article.title }}</a>
+            <div style="margin-top: 8px; font-size: 0.95em; opacity: 0.9;">{{ article.summary[:150] }}...</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if trends %}
+    <div class="trends-section">
+        <h2>📈 Trending Topics This Week</h2>
+        <div>
+            {% for trend in trends %}
+            <span class="trend-item">{{ trend.keyword }}<span class="trend-count">{{ trend.count }}</span></span>
+            {% endfor %}
+        </div>
     </div>
     {% endif %}
 
@@ -427,12 +794,18 @@ class TechWatch:
                     <a href="{{ article.link }}" target="_blank">{{ article.title }}</a>
                 </div>
                 <div class="article-meta">
+                    <span class="priority-badge priority-{{ article.priority }}">{{ article.priority }}</span>
                     <span class="feed-badge">{{ article.feed_name }}</span>
                     📅 {{ article.published_str }}
                 </div>
                 <div class="article-summary">
                     {{ article.summary }}
                 </div>
+                {% if article.ai_summary %}
+                <div class="ai-summary">
+                    {{ article.ai_summary }}
+                </div>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -474,7 +847,10 @@ class TechWatch:
             total_feeds=len(unique_feeds),
             generation_time=datetime.now().strftime("%m/%d/%Y at %H:%M:%S"),
             category_icons=category_icons,
-            errors=self.errors
+            errors=self.errors,
+            top_articles=self.top_articles,
+            trends=self.trends,
+            duplicate_groups=self.duplicate_groups
         )
         
         return html
@@ -583,6 +959,23 @@ class TechWatch:
         
         # Send email if configured
         self.send_email(html, filepath)
+        
+        # Send Teams/Slack notifications if enabled
+        if self.top_articles:
+            critical_articles = [a for a in self.top_articles if a.get('priority') == 'critical']
+            if critical_articles:
+                message = f"🚨 {len(critical_articles)} CRITICAL article(s) found!\n\n"
+                for a in critical_articles[:3]:
+                    message += f"• {a['title']}\n  {a['link']}\n\n"
+                self._send_to_teams(message, is_critical=True)
+                self._send_to_slack(message, is_critical=True)
+            else:
+                message = f"📊 Tech Watch Report - {len(self.articles)} articles collected\n"
+                if self.trends:
+                    message += f"🔥 Top trends: {', '.join([t['keyword'] for t in self.trends[:5]])}\n"
+                message += f"\nView full report: file://{filepath}"
+                self._send_to_teams(message)
+                self._send_to_slack(message)
         
         # Cleanup
         self.cleanup_old_reports()

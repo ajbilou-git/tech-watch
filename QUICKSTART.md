@@ -55,6 +55,22 @@ That's it! You'll receive a report every morning at 9 AM. 🎉
 
 ---
 
+## 🚀 New Features Included!
+
+Your tech watch now includes:
+- 🎯 **Priority Tagging** - Auto-classification (Critical/High/Medium/Low)
+- 🔥 **TOP 3 Summary** - Most important articles highlighted
+- 📈 **Trending Topics** - Weekly keyword analysis
+- 🔗 **Duplicate Detection** - Groups similar articles
+- 🤖 **AI Summaries** - Optional OpenAI integration
+- 💬 **Teams/Slack** - Optional collaboration tool notifications
+
+All features are enabled by default (except AI and Teams/Slack which require setup).
+
+---
+
 ## 📖 Need Help?
 
-Check the complete [README.md](README.md) for more details.
+- **Advanced Features**: See [README.md](README.md#-advanced-features-configuration)
+- **Email Setup**: See [GMAIL_SETUP.md](GMAIL_SETUP.md)
+- **Add RSS Feeds**: See [HOW_TO_ADD_FEEDS.md](HOW_TO_ADD_FEEDS.md)

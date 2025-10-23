@@ -1,20 +1,21 @@
-# Tech Watch Configuration
+# Tech Watch Configuration Example
+# Copy this file to config.yaml and customize it
 
 email:
-  to: "abdelhadi.jbilou@gmail.com"
+  to: "your-email@gmail.com"
   
   # Gmail SMTP - Use App Password (NOT regular password)
   # Generate at: https://myaccount.google.com/apppasswords
   smtp_server: "smtp.gmail.com"
   smtp_port: 587
   smtp_username: "your-email@gmail.com"
-  smtp_password: "xxxx xxxx xxxx xxxx"
+  smtp_password: "xxxx xxxx xxxx xxxx"  # 16-character App Password
   from_email: ""
 
 output:
   folder: "./reports"
-  days_back: 2
-  retention_days: 30
+  days_back: 2  # Number of days to look back (1-14 recommended)
+  retention_days: 30  # How long to keep old reports
   smart_summary: true
   summary_max_length: 300
 
@@ -45,6 +46,7 @@ features:
     min_mentions: 2  # Minimum mentions to be considered a trend
   
   # OpenAI Integration - AI-powered summaries (optional, requires API key)
+  # Cost: ~$0.01/day for 20-30 articles
   openai:
     enabled: false
     api_key: ""  # Get from: https://platform.openai.com/api-keys

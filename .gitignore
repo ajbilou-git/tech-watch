@@ -1,17 +1,24 @@
 # Python
-venv/
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 *.egg-info/
+dist/
+build/
 
-# Rapports générés
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Generated Reports
 reports/
+*.html
 
-# Configuration personnelle (avec secrets)
-config.local.yaml
+# Configuration (contains sensitive data)
+config.yaml
 
 # IDE
 .vscode/
@@ -23,4 +30,7 @@ config.local.yaml
 # OS
 .DS_Store
 Thumbs.db
-Desktop.ini
+desktop.ini
+
+# Logs
+*.log

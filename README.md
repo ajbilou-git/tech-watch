@@ -155,18 +155,137 @@ Unregister-ScheduledTask -TaskName "MastermaintTechWatch" -Confirm:$false
 
 ```
 tech-watch/
-├── config.yaml                    # RSS feeds configuration
+├── config.yaml                    # Main configuration file
+├── feeds_config.yaml              # External RSS feeds configuration (optional)
 ├── requirements.txt               # Python dependencies
+├── .gitignore                     # Git ignore rules
+│
 ├── tech_watch.py                  # Main Python script
-├── run_tech_watch.ps1            # PowerShell execution script
-├── setup_task_scheduler.ps1      # Automation setup
+│
+├── run_tech_watch.ps1            # Main execution script
+├── setup_task_scheduler.ps1      # Windows Task Scheduler automation
+│
 ├── GMAIL_SETUP.md                # Email configuration guide
-├── README.md                      # This documentation
-├── QUICKSTART.md                 # 5-minute quick start guide
-├── reports/                       # Generated reports
+├── HOW_TO_ADD_FEEDS.md           # Guide to add new RSS feeds
+├── README.md                      # Complete documentation
+├── QUICKSTART.md                 # 5-minute quick start
+│
+├── reports/                       # Generated HTML reports
 │   └── tech_watch_20251023.html
-└── venv/                         # Virtual environment (auto-created)
+│
+└── venv/                         # Python virtual environment (auto-created)
 ```
+
+### 📄 Core Files
+
+#### `config.yaml`
+Main configuration file containing:
+- **Email settings**: Gmail SMTP configuration
+- **Output settings**: Report folder, retention period, monitoring days
+- **Smart summary**: Enable/disable AI text extraction
+- **RSS feeds**: Inline feed definitions (or reference to external file)
+
+**Key parameters:**
+- `days_back`: Number of days to monitor (1-14 recommended)
+- `retention_days`: How long to keep old reports (30 default)
+- `smtp_username/password`: Gmail credentials for email delivery
+
+#### `feeds_config.yaml` *(Optional)*
+External RSS feeds configuration for easier maintenance:
+- **Technology keywords**: Reusable keyword groups (cloud, security, devops, etc.)
+- **Feeds by category**: All RSS feed URLs and keywords
+- **Easy to update**: Add new feeds without touching main config
+
+**To activate:** Uncomment `feeds_config_file: "feeds_config.yaml"` in `config.yaml`
+
+#### `requirements.txt`
+Python package dependencies:
+- `feedparser` - RSS feed parsing
+- `pyyaml` - YAML configuration files
+- `jinja2` - HTML template rendering
+- `beautifulsoup4` - HTML cleaning for smart summaries
+- `python-dateutil` - Date parsing
+- `requests` - HTTP requests
+
+### 🐍 Python Scripts
+
+#### `tech_watch.py`
+Main application script (600+ lines):
+- **Feed aggregation**: Fetches RSS feeds from configured sources
+- **Smart filtering**: Filters by date range and keywords
+- **AI summaries**: Extracts key sentences using text analysis
+- **HTML generation**: Creates beautiful, responsive reports
+- **Email delivery**: Sends reports via Gmail SMTP
+- **Auto-cleanup**: Deletes old reports based on retention policy
+
+**Key functions:**
+- `fetch_feeds()` - Downloads and parses RSS feeds
+- `_create_smart_summary()` - Generates intelligent summaries
+- `generate_report()` - Creates HTML report
+- `send_email()` - Delivers report via email
+- `cleanup_old_reports()` - Removes outdated files
+
+### 💻 PowerShell Scripts
+
+#### `run_tech_watch.ps1`
+Main execution script that:
+1. Checks Python installation
+2. Creates virtual environment (first run)
+3. Installs/updates dependencies
+4. Runs `tech_watch.py`
+5. Opens report in browser (with `-OpenReport` flag)
+
+**Usage:**
+```powershell
+.\run_tech_watch.ps1              # Run and save report
+.\run_tech_watch.ps1 -OpenReport  # Run and open in browser
+```
+
+#### `setup_task_scheduler.ps1`
+Automation configuration script:
+- Creates Windows scheduled task
+- Configures daily execution (default: 9 AM)
+- Sets up automatic report generation and email delivery
+- Requires administrator privileges
+
+**Usage:**
+```powershell
+.\setup_task_scheduler.ps1                # Default 9:00 AM
+.\setup_task_scheduler.ps1 -TaskTime "08:30"  # Custom time
+```
+
+### 📂 Directories
+
+#### `reports/`
+Contains all generated HTML reports:
+- `tech_watch_YYYYMMDD.html` - Daily reports
+- Files older than `retention_days` are automatically deleted
+- Excluded from Git (in `.gitignore`)
+
+**Typical size:** ~100 KB per report
+
+#### `venv/`
+Python virtual environment:
+- Auto-created on first run
+- Contains isolated Python packages
+- Platform-specific (Windows/Linux/Mac)
+- Excluded from Git (in `.gitignore`)
+
+**Typical size:** ~50 MB
+
+### 🔒 Configuration Files
+
+#### `.gitignore`
+Defines files to exclude from Git:
+```
+venv/              # Virtual environment
+reports/           # Generated reports
+*.pyc              # Python bytecode
+__pycache__/       # Python cache
+config.yaml        # Contains sensitive data (Gmail password)
+```
+
+**Important:** Always add sensitive files here before pushing to Git!
 
 ## 🎨 Report Example
 
